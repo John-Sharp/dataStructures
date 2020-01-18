@@ -48,6 +48,7 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
             free(n);
             return l;
         }
+        nPrev = n;
     }
 
     return l;
