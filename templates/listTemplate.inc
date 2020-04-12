@@ -24,6 +24,30 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
     return nn;
 }
 
+<pf>List * <pf>ListAddToEnd(<pf>List * l, <tp> * val)
+{
+    <pf>List * nn = malloc(sizeof(*nn));
+    if (!nn)
+    {
+        fprintf(stderr, "error allocating memory for list\n");
+        exit(1);
+        return l;
+    }
+    nn->val = val;
+    nn->next = NULL;
+
+    <pf>List * node;
+    for (node = l; node != NULL; node = node->next)
+    {}
+
+    if (!node)
+        return nn;
+
+    node->next = nn;
+
+    return l;
+}
+
 <pf>List * <pf>ListRm(<pf>List * l, const <tp> * val, bool (*cmp)(const <tp> * a, const <tp> * b), <tp> ** removedVal)
 {
     <pf>List * n;
