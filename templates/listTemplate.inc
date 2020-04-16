@@ -36,12 +36,12 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
     nn->val = val;
     nn->next = NULL;
 
-    <pf>List * node;
-    for (node = l; node != NULL; node = node->next)
-    {}
-
-    if (!node)
+    if (!l)
         return nn;
+
+    <pf>List * node;
+    for (node = l; node->next != NULL; node = node->next)
+    {}
 
     node->next = nn;
 
@@ -90,4 +90,22 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
     }
 
     return NULL;
+}
+
+<pf>List * <pf>ListUpsert(<pf>List * l, <tp> * val, bool (*cmp)(const <tp> * a, const <tp> * b), <tp> ** replacedVal)
+{
+    <pf>List * n = <pf>ListSearch(l, val, cmp);
+
+    if (!n)
+    {
+        if (replacedVal)
+            *replacedVal = NULL;
+        return <pf>ListAdd(l, val);
+    }
+    <tp> * oldVal = n->val;
+
+    n->val = val;
+    *replacedVal = oldVal;
+
+    return l;
 }

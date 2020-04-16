@@ -19,3 +19,5 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b);
 <pf>List * <pf>ListRm(<pf>List * l, const <tp> * val, bool (*cmp)(const <tp> * a, const <tp> * b), <tp> ** removedVal);
 
 <pf>List * <pf>ListSearch(<pf>List * l, const <tp> * val, bool (*cmp)(const <tp> * a, const <tp> * b));
+
+<pf>List * <pf>ListUpsert(<pf>List * l, <tp> * val, bool (*cmp)(const <tp> * a, const <tp> * b), <tp> ** replacedVal);
