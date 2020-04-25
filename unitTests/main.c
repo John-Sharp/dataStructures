@@ -5,14 +5,18 @@ typedef int testobj;
 
 #include "testMallocTracker.h"
 
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+
 static void testAddRm();
 static void testAddEnd();
+static void testListNodeMv();
 static void testSearch();
 static void testUpsert();
 int main()
 {
     testAddRm();
     testAddEnd();
+    testListNodeMv();
     testSearch();
     testUpsert();
 }
@@ -156,6 +160,261 @@ static void testAddEnd()
         testobjList * lt = l;
         l = l->next;
         free(lt);
+    }
+}
+
+
+static void subTestNodeMvSingleMemberListSelf();
+static void subTestNodeMvSingleMemberListEmptyList();
+static void subTestNodeMvEmptyListMultiMemberList();
+static void subTestNodeMvMultiMemberListMultiMemberList();
+static void testListNodeMv()
+{
+    subTestNodeMvSingleMemberListSelf();
+    subTestNodeMvSingleMemberListEmptyList();
+    subTestNodeMvEmptyListMultiMemberList();
+    subTestNodeMvMultiMemberListMultiMemberList();
+}
+
+static void subTestNodeMvSingleMemberListSelf()
+{
+    // test moving node to own list on single member list
+    testobjList * list = NULL;
+    testobj listSource [] = {42};
+    list = testobjListAdd(list, listSource);
+
+    allocatorTrackerReset();
+    testobjList * targetList = list;
+    targetList = testobjListNodeMv(targetList, &list, list);
+
+    if (allocatorTrackerGetBytesAllocated() != 0)
+    {
+        printf("subTestNodeMvSingleMemberListSelf(): "
+                "operation allocates memory\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(targetList, listSource, 1))
+    {
+        printf("subTestNodeMvSingleMemberListSelf(): unexpected resultant "
+                "list\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(list, listSource, 1))
+    {
+        printf("subTestNodeMvSingleMemberListSelf(): unexpected original "
+                "list \n");
+        assert(0);
+    }
+
+    free(list);
+}
+
+static void subTestNodeMvSingleMemberListEmptyList()
+{
+    // test moving node on its own on a list to another, empty, list
+    testobjList * list = NULL;
+    testobj listSource [] = {42};
+    list = testobjListAdd(list, listSource);
+
+    allocatorTrackerReset();
+    testobjList * targetList = NULL;
+
+    targetList = testobjListNodeMv(targetList, &list, list);
+
+    if (allocatorTrackerGetBytesAllocated() != 0)
+    {
+        printf("subTestNodeMvSingleMemberListEmptyList(): "
+                "list allocates memory\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(targetList, listSource, 1))
+    {
+
+        printf("subTestNodeMvSingleMemberListEmptyList(): "
+                "unexpected target list\n");
+        assert(0);
+    }
+
+    if (list != NULL)
+    {
+        printf("subTestNodeMvSingleMemberListEmptyList(): "
+                "original list not empty\n");
+        assert(0);
+    }
+
+    free(targetList);
+}
+
+static void subTestNodeMvEmptyListMultiMemberList()
+{
+    testobjList * list = NULL;
+    testobj targetSource[] = {66,3,8,90};
+    int targetSourceSize = sizeof(targetSource)/sizeof(targetSource[0]);
+    testobjList * targetList = NULL;
+
+    int i;
+    for (i = targetSourceSize-1; i >= 0; i--)
+    {
+        targetList = testobjListAdd(targetList, &targetSource[i]);
+    }
+
+    allocatorTrackerReset();
+
+    targetList = testobjListNodeMv(targetList, &list, list);
+
+    if (allocatorTrackerGetBytesAllocated() != 0)
+    {
+        printf("subTestNodeMvEmptyListMultiMemberList(): "
+                "list allocates memory\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(targetList, targetSource, targetSourceSize))
+    {
+
+        printf("subTestNodeMvEmptyListMultiMemberList(): "
+                "unexpected target list\n");
+        assert(0);
+    }
+
+    if (list != NULL)
+    {
+        printf("subTestNodeMvEmptyListMultiMemberList(): "
+                "original list not empty\n");
+        assert(0);
+    }
+
+    testobjList * l;
+    for (l = targetList; l;)
+    {
+        testobjList * lt = l;
+        l = l->next;
+        free(lt);
+    }
+}
+
+static void subTestNodeMvMultiMemberListMultiMemberList()
+{
+    testobjList * list = NULL;
+    testobj listSource[] = {96, 72, 8, 16};
+    int listSourceSize = sizeof(listSource)/sizeof(listSource[0]);
+
+    int i;
+    for (i = listSourceSize-1; i >= 0; i--)
+    {
+        list = testobjListAdd(list, &listSource[i]);
+    }
+
+    testobjList * targetList = NULL;
+
+    testobj targetSource[] = {3,1,2};
+    int targetSourceSize = sizeof(targetSource)/sizeof(targetSource[0]);
+
+    testobj listExpectedStage1[] = {listSource[0], listSource[2], listSource[3]};
+    testobj listExpectedStage2[] = {listSource[0], listSource[2]};
+    testobj listExpectedStage3[] = {listSource[2]};
+
+    testobj targetListExpected[] = {
+        listSource[0],listSource[3],listSource[1],
+        targetSource[0], targetSource[1], targetSource[2]};
+    int targetListExpectedSize = sizeof(targetListExpected)\
+                                 /sizeof(targetListExpected[0]);
+
+    for (i = targetSourceSize-1; i >= 0; i--)
+    {
+        targetList = testobjListAdd(targetList, &targetSource[i]);
+    }
+
+    allocatorTrackerReset();
+
+    testobjList * nodeToMove = list->next;
+
+    targetList = testobjListNodeMv(targetList, &list, nodeToMove);
+
+    if (allocatorTrackerGetBytesAllocated() != 0)
+    {
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "list allocates memory\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(targetList, &targetListExpected[2],
+                targetListExpectedSize-2))
+    {
+
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "unexpected target list\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(list, listExpectedStage1,
+                ARRAY_SIZE(listExpectedStage1)))
+    {
+
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "unexpected list\n");
+        assert(0);
+    }
+
+    nodeToMove = list->next->next;
+
+    targetList = testobjListNodeMv(targetList, &list, nodeToMove);
+
+    if (allocatorTrackerGetBytesAllocated() != 0)
+    {
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "list allocates memory\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(targetList, &targetListExpected[1],
+                targetListExpectedSize-1))
+    {
+
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "unexpected target list\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(list, listExpectedStage2,
+                ARRAY_SIZE(listExpectedStage2)))
+    {
+
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "unexpected list\n");
+        assert(0);
+    }
+
+    nodeToMove = list;
+
+    targetList = testobjListNodeMv(targetList, &list, nodeToMove);
+
+    if (allocatorTrackerGetBytesAllocated() != 0)
+    {
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "list allocates memory\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(targetList, targetListExpected,
+                targetListExpectedSize))
+    {
+
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "unexpected target list\n");
+        assert(0);
+    }
+
+    if (!listEqExpected(list, listExpectedStage3,
+                ARRAY_SIZE(listExpectedStage3)))
+    {
+
+        printf("subTestNodeMvMultiMemberListMultiMemberList(): "
+                "unexpected list\n");
+        assert(0);
     }
 }
 

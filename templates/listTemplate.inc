@@ -20,6 +20,9 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
     }
     nn->val = val;
     nn->next = l;
+    nn->prev = NULL;
+    if (l)
+        l->prev = nn;
 
     return nn;
 }
@@ -35,6 +38,7 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
     }
     nn->val = val;
     nn->next = NULL;
+    nn->prev = NULL;
 
     if (!l)
         return nn;
@@ -44,35 +48,71 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
     {}
 
     node->next = nn;
+    nn->prev = node;
 
     return l;
+}
+
+<pf>List * <pf>ListNodeMv(<pf>List * l, <pf>List ** lOriginal, <pf>List * m)
+{
+    if (!m)
+        return l;
+
+    if (!m->prev)
+    {
+        if (*lOriginal != l)
+            *lOriginal = m->next;
+    }
+    else
+    {
+        m->prev->next = m->next;
+    }
+
+    if (m->next)
+    {
+        m->next->prev = m->prev;
+    }
+
+    if (m != l)
+        m->next = l;
+    else
+        m->next = NULL;
+
+    if (l)
+    {
+        l->prev = m;
+    }
+    m->prev = NULL;
+
+    return m;
 }
 
 <pf>List * <pf>ListRm(<pf>List * l, const <tp> * val, bool (*cmp)(const <tp> * a, const <tp> * b), <tp> ** removedVal)
 {
     <pf>List * n;
-    <pf>List * nPrev = NULL;
     if (removedVal)
         *removedVal = NULL;
     for (n = l; n != NULL; n = n->next)
     {
         if (cmp(val, (n->val)))
         {
-            if (!nPrev)
+            if (n->next)
+                n->next->prev = n->prev;
+            if (!n->prev)
             {
-                <pf>List * newList = n->next;
                 if (removedVal)
                     *removedVal = n->val;
+                <pf>List * ret = n->next;
                 free(n);
-                return newList;
+                return ret;
             }
-            nPrev->next = n->next;
+
+            n->prev->next = n->next;
             if (removedVal)
                 *removedVal = n->val;
             free(n);
             return l;
         }
-        nPrev = n;
     }
 
     return l;
