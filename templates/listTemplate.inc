@@ -73,16 +73,17 @@ bool <pf>Cmp(const <tp> * a, const <tp> * b)
         m->next->prev = m->prev;
     }
 
+    m->next = NULL;
     if (m != l)
         m->next = l;
-    else
-        m->next = NULL;
 
+    m->prev = NULL;
     if (l)
     {
-        l->prev = m;
+        m->prev = l->prev;
+        if (*lOriginal != l)
+            l->prev = m;
     }
-    m->prev = NULL;
 
     return m;
 }
